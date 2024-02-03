@@ -37,6 +37,8 @@ st.header('Enum Analysis')
 total_review_state = df['reviewState'].value_counts(dropna=False)
 st.subheader('Total Review State Counts')
 st.dataframe(total_review_state, width=500)
+total=total_review_state['Count'].sum()
+st.subheader(f'Total data State Counts: {total}')
 
 # Enumerator Information
 enum_list = df['SubmitterName'].unique().tolist()
