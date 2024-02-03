@@ -2,6 +2,8 @@ import streamlit as st
 import pandas as pd
 import requests
 from datetime import date, timedelta
+import matplotlib as plt
+
 
 def data_collection():
     odata_url = 'https://survey.kuklpid.gov.np/v1/projects/16/forms/kukl_customer_survey_01.svc'
@@ -37,10 +39,25 @@ st.header('Enum Analysis')
 
 # Total Review State Counts
 total_review_state = df['reviewState'].value_counts(dropna=False).reset_index(name='Count')
-st.subheader('Total Review State Counts')
-st.dataframe(total_review_state, width=500)
 total=total_review_state['Count'].sum()
 st.subheader(f'Total data State Counts: {total}')
+st.subheader('Total Review State Counts')
+st.dataframe(total_review_state, width=500)
+
+
+# Display the summary statistics with mean
+st.write(f"Summary statistics for")
+avg=total/df['a01'].nunique()
+st.write(f'average data: {avg}')
+
+enum_info = df.groupby('SubmitterName').agg({'unique_form_id': 'count', 'a01': 'nunique'}).reset_index()
+enum_info = enum_info.rename(columns={'unique_form_id': 'Form Collected', 'a01': 'Days Worked'})
+enum_info = enum_info.sort_values(by='Form Collected', ascending=False)
+enum_info['Days gap']=df['a01'].nunique()-enum_info['Days Worked']
+enum_info['Average_collection_days_worked']=enum_info['Form Collected']/enum_info['Days Worked']
+enum_info['Average_collection_total_days']=enum_info['Form Collected']/df['a01'].nunique()
+st.subheader('Enumerator Information')
+st.dataframe(enum_info, use_container_width=True)
 
 
 # Enumerator Information
@@ -66,11 +83,10 @@ st.bar_chart(datewise_report.set_index('a01'), use_container_width=True, height=
 
 # Bar Chart for Enumerators and Form Counts
 grouped_df = df.groupby('SubmitterName')['unique_form_id'].count().reset_index()
-sorted_df = grouped_df.sort_values(by='unique_form_id',ascending=True)
+sorted_df = grouped_df.sort_values(by='unique_form_id', ascending=True)
+sorted_df['unique_form_id'] = sorted_df['unique_form_id'].fillna(0)
 st.subheader('Enumerator-wise Form Counts')
 st.bar_chart(sorted_df.set_index('SubmitterName'))
-
-
 
 today_date = date.today()
 yesterday_date = today_date - timedelta(days=1)
