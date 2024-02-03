@@ -2,8 +2,6 @@ import streamlit as st
 import pandas as pd
 import requests
 from datetime import date, timedelta
-import matplotlib as plt
-
 
 def data_collection():
     odata_url = 'https://survey.kuklpid.gov.np/v1/projects/16/forms/kukl_customer_survey_01.svc'
