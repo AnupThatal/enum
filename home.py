@@ -17,13 +17,15 @@ def data_collection():
 
     submission_url = f"{odata_url}/{submission_entity_set}"
     response = session.get(submission_url, params=params)
-
+    
     data = response.json()
-
+    
     final_df = pd.DataFrame(data['value'])
 
     final_df['a01'] = pd.to_datetime(final_df['a01']).dt.date
     final_df['SubmitterName'] = final_df['__system'].apply(lambda x: x.get('submitterName', None)).str.upper()
+    final_df['SubmissionDate'] = final_df['__system'].apply(lambda x: x.get('SubmissionDate', None)).str.upper()
+    final_df['SubmissionDate'] = pd.to_datetime(final_df['SubmissionDate']).dt.date
     final_df['reviewState'] = final_df['__system'].apply(lambda x: x.get('reviewState', None)).str.upper()
 
     return final_df
@@ -37,6 +39,9 @@ st.header('Enum Analysis')
 total_review_state = df['reviewState'].value_counts(dropna=False).reset_index(name='Count')
 st.subheader('Total Review State Counts')
 st.dataframe(total_review_state, width=500)
+total=total_review_state['Count'].sum()
+st.subheader(f'Total data State Counts: {total}')
+
 
 # Enumerator Information
 enum_list = df['SubmitterName'].unique().tolist()
@@ -54,15 +59,18 @@ st.subheader(f'Review State Counts for {enum_selected}')
 st.dataframe(enum_report, use_container_width=True, height=160)
 
 # Date-wise Review State Counts for Selected Enumerator
-datewise_report = df_enum.groupby('a01')['reviewState'].value_counts().unstack(fill_value=0)
+datewise_report = df_enum.groupby('a01')['reviewState'].value_counts(dropna=False).unstack().fillna(0)
+datewise_report = datewise_report.reset_index()
 st.subheader(f'Date-wise Review State Counts for {enum_selected}')
-st.bar_chart(datewise_report, use_container_width=True, height=300)
+st.bar_chart(datewise_report.set_index('a01'), use_container_width=True, height=300)
 
 # Bar Chart for Enumerators and Form Counts
 grouped_df = df.groupby('SubmitterName')['unique_form_id'].count().reset_index()
 sorted_df = grouped_df.sort_values(by='unique_form_id',ascending=True)
 st.subheader('Enumerator-wise Form Counts')
 st.bar_chart(sorted_df.set_index('SubmitterName'))
+
+
 
 today_date = date.today()
 yesterday_date = today_date - timedelta(days=1)
