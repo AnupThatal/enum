@@ -34,7 +34,7 @@ df = data_collection()
 st.header('Enum Analysis')
 
 # Total Review State Counts
-total_review_state = df['reviewState'].value_counts(dropna=False)
+total_review_state = df['reviewState'].value_counts(dropna=False).reset_index(name='Count')
 st.subheader('Total Review State Counts')
 st.dataframe(total_review_state, width=500)
 total=total_review_state['Count'].sum()
