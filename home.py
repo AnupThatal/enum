@@ -3,6 +3,9 @@ import pandas as pd
 import requests
 from datetime import date, timedelta
 
+
+
+
 def data_collection():
     odata_url = 'https://survey.kuklpid.gov.np/v1/projects/16/forms/kukl_customer_survey_01.svc'
     params = {
@@ -97,6 +100,7 @@ st.bar_chart(pivot_table)
 total_collection_date = df.groupby('a01')['unique_form_id'].count().reset_index()
 st.subheader('Total Collection Date Counts')
 st.line_chart(total_collection_date, x='a01', y='unique_form_id')
+
 
 #enumerator working profile
 num = st.text_input('Enter the days to calculate the dma area enum has work')
