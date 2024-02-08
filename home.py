@@ -2,11 +2,8 @@ import streamlit as st
 import pandas as pd
 import requests
 from datetime import date, timedelta
-import configparser
 
-# Read the configuration file
-config = configparser.ConfigParser()
-config.read('config.ini')
+secret = st.secrets['password']
 
 def data_collection():
     odata_url = 'https://survey.kuklpid.gov.np/v1/projects/16/forms/kukl_customer_survey_01.svc'
@@ -14,8 +11,8 @@ def data_collection():
         '$select': 'unique_form_id,a01,b10_sub_dmi,gb12_skip/gc01_skp1/gc20/c20,gb12_skip/gc01_skp1/gc20/c22,__system/submitterName,__system/reviewState,b02,unit_owners,gb12_skip/gc01_skp2/d08'
     }
     submission_entity_set = 'Submissions'
-    username = config['Credentials']['username']
-    password = config['Credentials']['password']
+    username = 'anupthatal2@gmail.com
+    password = secret
 
     session = requests.Session()
     session.auth = (username, password)
