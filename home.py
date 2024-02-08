@@ -11,7 +11,7 @@ def data_collection():
         '$select': 'unique_form_id,a01,b10_sub_dmi,gb12_skip/gc01_skp1/gc20/c20,gb12_skip/gc01_skp1/gc20/c22,__system/submitterName,__system/reviewState,b02,unit_owners,gb12_skip/gc01_skp2/d08'
     }
     submission_entity_set = 'Submissions'
-    username = 'anupthatal2@gmail.com
+    username = 'anupthatal2@gmail.com'
     password = secret
 
     session = requests.Session()
