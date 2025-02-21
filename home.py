@@ -3,7 +3,7 @@ import pandas as pd
 import requests
 from datetime import date, timedelta
 
-password1=st.secrets['auth_token']
+# password1=st.secrets['auth_token']
 
 def data_collection():
     odata_url = 'https://survey.kuklpid.gov.np/v1/projects/20/forms/kukl_customer_survey_phase1.svc'
@@ -12,8 +12,7 @@ def data_collection():
     }
     submission_entity_set = 'Submissions'
     username = 'anupthatal2@gmail.com'
-    password = password1
-
+    password = 'Super@8848'
     session = requests.Session()
     session.auth = (username, password)
 
