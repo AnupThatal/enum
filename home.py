@@ -8,7 +8,7 @@ password1=st.secrets['auth_token']
 def data_collection():
     odata_url = 'https://survey.kuklpid.gov.np/v1/projects/16/forms/kukl_customer_survey_01.svc'
     params = {
-        '$select': 'unique_form_id,a01,b10_sub_dmi,gb12_skip/gc01_skp1/gc20/c20,gb12_skip/gc01_skp1/gc20/c22,__system/submitterName,__system/reviewState,b02,unit_owners,gb12_skip/gc01_skp2/d08'
+        '$select': 'unique_form_id,a01,b10_dmi,gb12_skip/gc01_skp1/gc20/c20,gb12_skip/gc01_skp1/gc20/c22,__system/submitterName,__system/reviewState,b02,unit_owners,gb12_skip/gc01_skp2/d08'
     }
     submission_entity_set = 'Submissions'
     username = 'anupthatal2@gmail.com'
