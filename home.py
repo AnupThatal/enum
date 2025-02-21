@@ -6,7 +6,7 @@ from datetime import date, timedelta
 password1=st.secrets['auth_token']
 
 def data_collection():
-    odata_url = 'https://survey.kuklpid.gov.np/v1/projects/16/forms/kukl_customer_survey_01.svc'
+    odata_url = 'https://survey.kuklpid.gov.np/v1/projects/20/forms/kukl_customer_survey_phase1.svc'
     params = {
         '$select': 'unique_form_id,a01,b10_dmi,gb12_skip/gc01_skp1/gc20/c20,gb12_skip/gc01_skp1/gc20/c22,__system/submitterName,__system/reviewState,b02,unit_owners,gb12_skip/gc01_skp2/d08'
     }
