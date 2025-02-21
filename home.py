@@ -108,7 +108,7 @@ if num and num.isdigit():
     today_date = date.today()
     yesterday_date = today_date - timedelta(days=num_days)
     enum_dma = df[df['a01'] >= yesterday_date]
-    enum_dma1=enum_dma.groupby(['a01','b10_sub_dmi'])['SubmitterName'].count().reset_index()
+    enum_dma1=enum_dma.groupby(['a01','b10_dmi'])['SubmitterName'].count().reset_index()
     enum_dma1.sort_values(by='a01',ascending=False,inplace=True)
     enum_data_grouped = enum_dma.groupby(['a01', 'b10_dmi'])['SubmitterName'].unique().reset_index()
     enum_data_grouped['Collected']=enum_dma1['SubmitterName']
