@@ -3,6 +3,7 @@ import pandas as pd
 import requests
 from datetime import date, timedelta
 
+# Function to fetch data from ODK Central
 def fetch_data(odata_url, params, username, password):
     session = requests.Session()
     session.auth = (username, password)
@@ -16,6 +17,7 @@ def fetch_data(odata_url, params, username, password):
         st.error(f"Failed to fetch data from {odata_url}")
         return pd.DataFrame()
 
+# Function to clean and process data
 def preprocess(df):
     df['a01'] = pd.to_datetime(df['a01']).dt.date
     df['SubmitterName'] = df['__system'].apply(lambda x: x.get('submitterName', None)).str.upper()
@@ -31,24 +33,25 @@ st.header('Enumerator Data Analysis')
 username = 'anupthatal2@gmail.com'
 password = 'Super@8848'
 
+# OData query params
 params = {
     '$select': 'unique_form_id,a01,b10_dmi,gb12_skip/gc01_skp1/gc20/c20,gb12_skip/gc01_skp1/gc20/c22,__system/submitterName,__system/reviewState,b02,unit_owners,gb12_skip/gc01_skp2/d08'
 }
 
-# Primary OData Source (Phase 1)
+# Fetch and preprocess Phase 1
 odata_url_1 = 'https://survey.kuklpid.gov.np/v1/projects/20/forms/kukl_customer_survey_phase1.svc'
 df_phase1 = fetch_data(odata_url_1, params, username, password)
 df_phase1 = preprocess(df_phase1)
 df_phase1['Phase'] = 'Phase 1'
 
-# You can uncomment and add another OData form if needed (e.g., Phase 2)
+# Fetch and preprocess Phase 2
 odata_url_2 = 'https://survey.kuklpid.gov.np/v1/projects/20/forms/kukl_customer_survey_phase2.svc'
 df_phase2 = fetch_data(odata_url_2, params, username, password)
 df_phase2 = preprocess(df_phase2)
 df_phase2['Phase'] = 'Phase 2'
 
-# Combine all data (currently only one loaded)
-df = df_phase1  # pd.concat([df_phase1, df_phase2], ignore_index=True)
+# Combine both phases
+df = pd.concat([df_phase1, df_phase2], ignore_index=True)
 
 # Total Review State
 total_review_state = df['reviewState'].value_counts(dropna=False).reset_index(name='Count')
@@ -62,7 +65,10 @@ st.write(f"Total unique collection days: {df['a01'].nunique()}")
 st.write(f"Average entries per day: {avg:.2f}")
 
 # Enumerator Summary
-enum_info = df.groupby('SubmitterName').agg({'unique_form_id': 'count', 'a01': 'nunique'}).reset_index()
+enum_info = df.groupby('SubmitterName').agg({
+    'unique_form_id': 'count',
+    'a01': 'nunique'
+}).reset_index()
 enum_info = enum_info.rename(columns={'unique_form_id': 'Form Collected', 'a01': 'Days Worked'})
 enum_info = enum_info.sort_values(by='Form Collected', ascending=False)
 enum_info['Days gap'] = df['a01'].nunique() - enum_info['Days Worked']
