@@ -3,119 +3,109 @@ import pandas as pd
 import requests
 from datetime import date, timedelta
 
-# password1=st.secrets['auth_token']
-
-def data_collection():
-    odata_url = 'https://survey.kuklpid.gov.np/v1/projects/20/forms/kukl_customer_survey_phase1.svc'
-    params = {
-        '$select': 'unique_form_id,a01,b10_dmi,gb12_skip/gc01_skp1/gc20/c20,gb12_skip/gc01_skp1/gc20/c22,__system/submitterName,__system/reviewState,b02,unit_owners,gb12_skip/gc01_skp2/d08'
-    }
-    submission_entity_set = 'Submissions'
-    username = 'anupthatal2@gmail.com'
-    password = 'Super@8848'
+def fetch_data(odata_url, params, username, password):
     session = requests.Session()
     session.auth = (username, password)
-
-    submission_url = f"{odata_url}/{submission_entity_set}"
+    submission_url = f"{odata_url}/Submissions"
     response = session.get(submission_url, params=params)
-    
-    data = response.json()
-    
-    final_df = pd.DataFrame(data['value'])
 
-    final_df['a01'] = pd.to_datetime(final_df['a01']).dt.date
-    final_df['SubmitterName'] = final_df['__system'].apply(lambda x: x.get('submitterName', None)).str.upper()
-    final_df['SubmissionDate'] = final_df['__system'].apply(lambda x: x.get('SubmissionDate', None)).str.upper()
-    final_df['SubmissionDate'] = pd.to_datetime(final_df['SubmissionDate']).dt.date
-    final_df['reviewState'] = final_df['__system'].apply(lambda x: x.get('reviewState', None)).str.upper()
+    if response.status_code == 200:
+        data = response.json()
+        return pd.DataFrame(data['value'])
+    else:
+        st.error(f"Failed to fetch data from {odata_url}")
+        return pd.DataFrame()
 
-    return final_df
+def preprocess(df):
+    df['a01'] = pd.to_datetime(df['a01']).dt.date
+    df['SubmitterName'] = df['__system'].apply(lambda x: x.get('submitterName', None)).str.upper()
+    df['SubmissionDate'] = df['__system'].apply(lambda x: x.get('SubmissionDate', None))
+    df['SubmissionDate'] = pd.to_datetime(df['SubmissionDate']).dt.date
+    df['reviewState'] = df['__system'].apply(lambda x: x.get('reviewState', None)).str.upper()
+    return df
 
-df = data_collection()
+# Streamlit App Starts
+st.header('Enumerator Data Analysis')
 
-# Header
-st.header('Enum Analysis')
+# Auth Info
+username = 'anupthatal2@gmail.com'
+password = 'Super@8848'
 
-# Total Review State Counts
+params = {
+    '$select': 'unique_form_id,a01,b10_dmi,gb12_skip/gc01_skp1/gc20/c20,gb12_skip/gc01_skp1/gc20/c22,__system/submitterName,__system/reviewState,b02,unit_owners,gb12_skip/gc01_skp2/d08'
+}
+
+# Primary OData Source (Phase 1)
+odata_url_1 = 'https://survey.kuklpid.gov.np/v1/projects/20/forms/kukl_customer_survey_phase1.svc'
+df_phase1 = fetch_data(odata_url_1, params, username, password)
+df_phase1 = preprocess(df_phase1)
+df_phase1['Phase'] = 'Phase 1'
+
+# You can uncomment and add another OData form if needed (e.g., Phase 2)
+odata_url_2 = 'https://survey.kuklpid.gov.np/v1/projects/20/forms/kukl_customer_survey_phase2.svc'
+df_phase2 = fetch_data(odata_url_2, params, username, password)
+df_phase2 = preprocess(df_phase2)
+df_phase2['Phase'] = 'Phase 2'
+
+# Combine all data (currently only one loaded)
+df = df_phase1  # pd.concat([df_phase1, df_phase2], ignore_index=True)
+
+# Total Review State
 total_review_state = df['reviewState'].value_counts(dropna=False).reset_index(name='Count')
-total=total_review_state['Count'].sum()
-st.subheader(f'Total data State Counts: {total}')
-st.subheader('Total Review State Counts')
+total = total_review_state['Count'].sum()
+st.subheader(f'Total Data State Counts: {total}')
 st.dataframe(total_review_state, width=500)
 
+# Summary
+avg = total / df['a01'].nunique()
+st.write(f"Total unique collection days: {df['a01'].nunique()}")
+st.write(f"Average entries per day: {avg:.2f}")
 
-# Display the summary statistics with mean
-st.write(f"Summary statistics for")
-avg=total/df['a01'].nunique()
-st.write(f'average data: {avg}')
-
+# Enumerator Summary
 enum_info = df.groupby('SubmitterName').agg({'unique_form_id': 'count', 'a01': 'nunique'}).reset_index()
 enum_info = enum_info.rename(columns={'unique_form_id': 'Form Collected', 'a01': 'Days Worked'})
 enum_info = enum_info.sort_values(by='Form Collected', ascending=False)
-enum_info['Days gap']=df['a01'].nunique()-enum_info['Days Worked']
-enum_info['Average_collection_days_worked']=enum_info['Form Collected']/enum_info['Days Worked']
-enum_info['Average_collection_total_days']=enum_info['Form Collected']/df['a01'].nunique()
-st.subheader('Enumerator Information')
+enum_info['Days gap'] = df['a01'].nunique() - enum_info['Days Worked']
+enum_info['Avg/day (worked)'] = enum_info['Form Collected'] / enum_info['Days Worked']
+enum_info['Avg/day (total)'] = enum_info['Form Collected'] / df['a01'].nunique()
+st.subheader('Enumerator Summary')
 st.dataframe(enum_info, use_container_width=True)
 
-
-# Enumerator Information
+# Enumerator filter
 enum_list = df['SubmitterName'].unique().tolist()
 enum_selected = st.selectbox('Select Enumerator', enum_list)
 df_enum = df[df['SubmitterName'] == enum_selected]
 
-# Enumerator Statistics
-unique_dates_count = len(df_enum['a01'].unique())
-st.write(f"Number of days worked for {enum_selected}: {unique_dates_count}")
-st.write(f"Total days in the dataset: {len(df['a01'].unique())}")
+# Individual Enumerator View
+st.write(f"Days worked: {df_enum['a01'].nunique()} / {df['a01'].nunique()}")
+st.subheader(f'Review States for {enum_selected}')
+st.dataframe(df_enum['reviewState'].value_counts(dropna=False))
 
-# Review State Counts for Selected Enumerator
-enum_report = df_enum['reviewState'].value_counts(dropna=False)
-st.subheader(f'Review State Counts for {enum_selected}')
-st.dataframe(enum_report, use_container_width=True, height=160)
+datewise_report = df_enum.groupby('a01')['reviewState'].value_counts(dropna=False).unstack().fillna(0).reset_index()
+st.subheader(f'Daily Review State – {enum_selected}')
+st.bar_chart(datewise_report.set_index('a01'))
 
-# Date-wise Review State Counts for Selected Enumerator
-datewise_report = df_enum.groupby('a01')['reviewState'].value_counts(dropna=False).unstack().fillna(0)
-datewise_report = datewise_report.reset_index()
-st.subheader(f'Date-wise Review State Counts for {enum_selected}')
-st.bar_chart(datewise_report.set_index('a01'), use_container_width=True, height=300)
+# All Enumerators bar chart
+enum_counts = df.groupby('SubmitterName')['unique_form_id'].count().reset_index()
+enum_counts = enum_counts.sort_values(by='unique_form_id', ascending=True)
+st.subheader('Form Count per Enumerator')
+st.bar_chart(enum_counts.set_index('SubmitterName'))
 
-# Bar Chart for Enumerators and Form Counts
-grouped_df = df.groupby('SubmitterName')['unique_form_id'].count().reset_index()
-sorted_df = grouped_df.sort_values(by='unique_form_id', ascending=True)
-sorted_df['unique_form_id'] = sorted_df['unique_form_id'].fillna(0)
-st.subheader('Enumerator-wise Form Counts')
-st.bar_chart(sorted_df.set_index('SubmitterName'))
+# Daily Collection Chart
+daily_df = df.groupby('a01')['unique_form_id'].count().reset_index()
+st.subheader('Total Collection Over Time')
+st.line_chart(daily_df.set_index('a01'))
 
-today_date = date.today()
-yesterday_date = today_date - timedelta(days=1)
-st.write("Yesterday's Date:", yesterday_date)
-df_date=df[df['a01']==yesterday_date]
-pivot_table = pd.pivot_table(df_date, values='a01', index='SubmitterName', aggfunc='count')
-st.bar_chart(pivot_table)
-
-
-total_collection_date = df.groupby('a01')['unique_form_id'].count().reset_index()
-st.subheader('Total Collection Date Counts')
-st.line_chart(total_collection_date, x='a01', y='unique_form_id')
-
-
-#enumerator working profile
-num = st.text_input('Enter the days to calculate the dma area enum has work')
-
+# DMA area filter
+num = st.text_input('Days to calculate enum activity by DMA')
 if num and num.isdigit():
     num_days = int(num)
-    today_date = date.today()
-    yesterday_date = today_date - timedelta(days=num_days)
-    enum_dma = df[df['a01'] >= yesterday_date]
-    enum_dma1=enum_dma.groupby(['a01','b10_dmi'])['SubmitterName'].count().reset_index()
-    enum_dma1.sort_values(by='a01',ascending=False,inplace=True)
-    enum_data_grouped = enum_dma.groupby(['a01', 'b10_dmi'])['SubmitterName'].unique().reset_index()
-    enum_data_grouped['Collected']=enum_dma1['SubmitterName']
-    enum_data_grouped.sort_values(by='a01',ascending=False,inplace=True)
-    st.write("Grouped Data with Unique SubmitterNames:")
-    st.write(enum_data_grouped)
-    t=enum_data_grouped['Collected'].sum()
-    st.caption(f'Total collection {t}')
+    since_date = date.today() - timedelta(days=num_days)
+    enum_dma = df[df['a01'] >= since_date]
+    dma_stats = enum_dma.groupby(['a01', 'b10_dmi'])['SubmitterName'].unique().reset_index()
+    dma_stats['Count'] = enum_dma.groupby(['a01', 'b10_dmi'])['SubmitterName'].count().values
+    st.subheader(f'Enumerator-DMA Activity (Last {num_days} days)')
+    st.dataframe(dma_stats.sort_values(by='a01', ascending=False), use_container_width=True)
+    st.caption(f"Total collected: {dma_stats['Count'].sum()}")
 else:
-    st.error("Please enter a valid integer for the number of days.")
+    st.info("Enter number of days to show recent DMA work.")
