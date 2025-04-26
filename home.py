@@ -4,11 +4,6 @@ import requests
 from datetime import date, timedelta
 from dotenv import load_dotenv
 
-# Function to fetch data from ODK Central
-load_dotenv()
-
-PASS = os.getenv("PASSWORD")
-
 
 
 def fetch_data(odata_url, params, username, password):
@@ -38,7 +33,7 @@ st.header('Enumerator Data Analysis')
 
 # Auth Info
 username = 'anupthatal2@gmail.com'
-password = PASS
+password = 'Super@8848'
 
 # OData query params
 params = {
