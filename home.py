@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 import requests
 from datetime import date, timedelta
-from dotenv import load_dotenv
 
 
 
